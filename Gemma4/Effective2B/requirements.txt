@@ -1,0 +1,18 @@
+# PyTorch (CUDA 12.1 빌드 — RTX 4060 호환)
+--index-url https://download.pytorch.org/whl/cu121
+torch
+torchvision
+torchaudio
+
+# 핵심
+vllm
+transformers
+accelerate
+openai
+
+# 양자화
+bitsandbytes       # 4-bit/8-bit (RTX 4060 8GB 대응)
+
+# 멀티모달
+Pillow
+librosa            # 오디오 입력
