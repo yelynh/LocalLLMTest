@@ -139,34 +139,48 @@ class LocalChat:
         self.history: list[dict] = []
         self.thinking = thinking
 
+    @staticmethod
+    def _text_message(role: str, text: str) -> dict:
+        return {"role": role, "content": [{"type": "text", "text": text}]}
+
     def send(self, text: str, image_path: str | None = None) -> str:
         if image_path:
             raise RuntimeError("local 모드의 이미지 입력은 아직 미지원입니다. server 모드를 사용하세요.")
 
-        self.history.append(
-            {"role": "user", "content": [{"type": "text", "text": text}]}
-        )
+        user_message = self._text_message("user", text)
+        self.history.append(user_message)
 
-        prompt = self.processor.apply_chat_template(
-            self.history,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=self.thinking,
-        )
-        inputs = self.processor(text=prompt, return_tensors="pt").to(self.model.device)
-        output_ids = self.model.generate(
-            **inputs,
-            max_new_tokens=2048,
-            temperature=1.0,
-            top_p=0.95,
-            top_k=64,
-            do_sample=True,
-        )
-        # 입력 토큰 제외하고 디코딩
-        new_tokens = output_ids[0][inputs["input_ids"].shape[-1]:]
-        response_text = self.processor.decode(new_tokens, skip_special_tokens=False)
-        reply = format_generated_response(self.processor, response_text)
-        self.history.append({"role": "assistant", "content": reply})
+        try:
+            prompt = self.processor.apply_chat_template(
+                self.history,
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=self.thinking,
+            )
+            if not isinstance(prompt, str):
+                raise TypeError(
+                    f"chat template returned {type(prompt).__name__}, expected str"
+                )
+
+            inputs = self.processor(text=prompt, return_tensors="pt").to(self.model.device)
+            output_ids = self.model.generate(
+                **inputs,
+                max_new_tokens=2048,
+                temperature=1.0,
+                top_p=0.95,
+                top_k=64,
+                do_sample=True,
+            )
+            # 입력 토큰 제외하고 디코딩
+            new_tokens = output_ids[0][inputs["input_ids"].shape[-1]:]
+            response_text = self.processor.decode(new_tokens, skip_special_tokens=False)
+            reply = format_generated_response(self.processor, response_text)
+        except Exception:
+            if self.history and self.history[-1] is user_message:
+                self.history.pop()
+            raise
+
+        self.history.append(self._text_message("assistant", reply))
         return reply
 
     def clear(self):
