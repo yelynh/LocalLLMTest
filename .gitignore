@@ -1,0 +1,16 @@
+/data/
+
+# Local runtimes, model downloads, and process output.
+__pycache__/
+*.py[cod]
+*.log
+*.pid
+/download_logs/
+/ollama/downloads/
+/ollama/models/
+/ollama/root/
+/qwen3.6/27B/qwen35b_a3b_nf4/
+/qwen3.6/repo/
+.env
+.env.*
+!.env.example
